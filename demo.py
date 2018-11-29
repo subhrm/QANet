@@ -91,9 +91,9 @@ class Demo(object):
                               'question:0': [q],
                               'context_char:0': [ch],
                               'question_char:0': [qh]}
-                        yp1, yp2 = sess.run(
-                            [model.yp1, model.yp2], feed_dict=fd)
+                        yp1, yp2, loss = sess.run(
+                            [model.yp1, model.yp2, model.loss], feed_dict=fd)
                         yp2[0] += 1
                         response = " ".join(context[yp1[0]:yp2[0]])
                         query = []
-                        #loss = model.get_loss()
+                        # loss = model.get_loss()
