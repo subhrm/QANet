@@ -175,7 +175,9 @@ class Model(object):
             losses2 = tf.nn.softmax_cross_entropy_with_logits(
                 logits=logits2, labels=self.y2)
 
-            self.loss_stg0 = tf.reduce_mean(losses + losses2)
+            self.score_stg0 = tf.reduce_max(tf.reduce_max(
+                outer, axis=2), axis=1) + tf.reduce_max(tf.reduce_max(outer, axis=1), axis=1)
+
             self.loss = tf.reduce_mean(losses + losses2)
 
         if config.l2_norm is not None:

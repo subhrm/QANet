@@ -19,7 +19,7 @@ https://github.com/minsangkim142/R-net
 app = bottle.Bottle()
 query = []
 response = ""
-loss = 0.0
+score = 0.0
 
 
 @app.get("/")
@@ -36,12 +36,12 @@ def answer():
     print("received question: {}".format(question))
     # if not passage or not question:
     #     exit()
-    global query, response, loss
+    global query, response, score
     query = (passage, question)
     while not response:
         sleep(0.1)
     print("received response: {}".format(response))
-    response_ = {"answer": response, "loss": float(loss)}
+    response_ = {"answer": response, "score": float(score)}
     response = []
     return response_
 
@@ -61,7 +61,7 @@ class Demo(object):
             run_event.clear()
 
     def demo_backend(self, model, config, run_event):
-        global query, response, loss
+        global query, response, score
 
         with open(config.word_dictionary, "r") as fh:
             word_dictionary = json.load(fh)
@@ -91,9 +91,8 @@ class Demo(object):
                               'question:0': [q],
                               'context_char:0': [ch],
                               'question_char:0': [qh]}
-                        yp1, yp2, loss = sess.run(
-                            [model.yp1, model.yp2, model.loss_stg0], feed_dict=fd)
+                        yp1, yp2, score = sess.run(
+                            [model.yp1, model.yp2, model.score_stg0], feed_dict=fd)
                         yp2[0] += 1
                         response = " ".join(context[yp1[0]:yp2[0]])
                         query = []
-                        # loss = sess.run([model.get_loss()])
