@@ -19,12 +19,15 @@ https://github.com/minsangkim142/R-net
 app = bottle.Bottle()
 query = []
 response = ""
+loss = 0.0
+
 
 @app.get("/")
 def home():
     with open('demo.html', 'r') as fl:
         html = fl.read()
         return html
+
 
 @app.post('/answer')
 def answer():
@@ -33,20 +36,22 @@ def answer():
     print("received question: {}".format(question))
     # if not passage or not question:
     #     exit()
-    global query, response
+    global query, response, loss
     query = (passage, question)
     while not response:
         sleep(0.1)
     print("received response: {}".format(response))
-    response_ = {"answer": response}
+    response_ = {"answer": response, "loss": float(loss)}
     response = []
     return response_
+
 
 class Demo(object):
     def __init__(self, model, config):
         run_event = threading.Event()
         run_event.set()
-        threading.Thread(target=self.demo_backend, args = [model, config, run_event]).start()
+        threading.Thread(target=self.demo_backend, args=[
+                         model, config, run_event]).start()
         app.run(port=8080, host='0.0.0.0')
         try:
             while 1:
@@ -56,7 +61,7 @@ class Demo(object):
             run_event.clear()
 
     def demo_backend(self, model, config, run_event):
-        global query, response
+        global query, response, loss
 
         with open(config.word_dictionary, "r") as fh:
             word_dictionary = json.load(fh)
@@ -71,19 +76,24 @@ class Demo(object):
             with tf.Session(config=sess_config) as sess:
                 sess.run(tf.global_variables_initializer())
                 saver = tf.train.Saver()
-                saver.restore(sess, tf.train.latest_checkpoint(config.save_dir))
+                saver.restore(
+                    sess, tf.train.latest_checkpoint(config.save_dir))
                 if config.decay < 1.0:
                     sess.run(model.assign_vars)
                 while run_event.is_set():
                     sleep(0.1)
                     if query:
-                        context = word_tokenize(query[0].replace("''", '" ').replace("``", '" '))
-                        c,ch,q,qh = convert_to_features(config, query, word_dictionary, char_dictionary)
+                        context = word_tokenize(query[0].replace(
+                            "''", '" ').replace("``", '" '))
+                        c, ch, q, qh = convert_to_features(
+                            config, query, word_dictionary, char_dictionary)
                         fd = {'context:0': [c],
                               'question:0': [q],
                               'context_char:0': [ch],
                               'question_char:0': [qh]}
-                        yp1,yp2 = sess.run([model.yp1, model.yp2], feed_dict = fd)
+                        yp1, yp2 = sess.run(
+                            [model.yp1, model.yp2], feed_dict=fd)
                         yp2[0] += 1
                         response = " ".join(context[yp1[0]:yp2[0]])
                         query = []
+                        loss = model.get_loss()
