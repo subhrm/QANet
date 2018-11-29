@@ -96,4 +96,4 @@ class Demo(object):
                         yp2[0] += 1
                         response = " ".join(context[yp1[0]:yp2[0]])
                         query = []
-                        loss = model.get_loss()
+                        #loss = model.get_loss()
